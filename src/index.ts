@@ -1,10 +1,7 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
-import healthRoutes from "./routes/health.routes.js";
-import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/user.routes.js";
-import chatRoutes from "./routes/chat.routes.js";
+import routes from "./routes/index.js";
 import connectDB from "./config/database.js";
 
 const app = express();
@@ -22,9 +19,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api", healthRoutes);
-app.use("/api/auth", authRoutes);
-app.use("/api/chat", chatRoutes);
+app.use("/api", routes);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({
@@ -44,8 +39,8 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server is running on port: ${PORT}`);
-  console.log(`🌍 Environment: ${NODE_ENV}`)
+  console.log(`Server is running on port: ${PORT}`);
+  console.log(`Environment: ${NODE_ENV}`)
 });
 
 export default app;

@@ -105,7 +105,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Generate JWT token
     const token = generateToken(user.id, user.email);
 
     res.status(200).json({

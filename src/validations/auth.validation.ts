@@ -20,7 +20,6 @@ export const registerSchema = Joi.object({
   }),
 });
 
-// Login validation schema
 export const loginSchema = Joi.object({
   email: Joi.string()
     .email()

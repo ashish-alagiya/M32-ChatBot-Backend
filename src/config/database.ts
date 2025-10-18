@@ -17,9 +17,9 @@ const connectDB = async (): Promise<void> => {
 
     await mongoose.connect(mongoURI, options);
 
-    console.log("✅ MongoDB connected successfully");
-    console.log(`📦 Database: ${mongoose.connection.name}`);
-    console.log(`🔗 Host: ${mongoose.connection.host}`);
+    console.log("MongoDB connected successfully");
+    console.log(`Database: ${mongoose.connection.name}`);
+    console.log(`Host: ${mongoose.connection.host}`);
 
     mongoose.connection.on("connected", () => {
       console.log("Mongoose connected to MongoDB");

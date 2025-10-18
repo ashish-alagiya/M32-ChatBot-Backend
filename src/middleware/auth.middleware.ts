@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import config from "../config/index.js";
 import User from "../models/user.model.js";
 
-// Extend Express Request to include user
 export interface AuthRequest extends Request {
   user?: {
     userId: string;
@@ -12,14 +11,12 @@ export interface AuthRequest extends Request {
   };
 }
 
-// Verify JWT Token Middleware
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -30,7 +27,7 @@ export const authenticate = async (
       return;
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const token = authHeader.substring(7);
 
     const jwtSecret = config.jwtSecret;
 
@@ -38,10 +35,8 @@ export const authenticate = async (
       throw new Error("JWT_SECRET is not defined in environment variables");
     }
 
-    // Verify token
     const decoded = jwt.verify(token, jwtSecret) as { userId: string };
 
-    // Get user from database
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
@@ -52,7 +47,6 @@ export const authenticate = async (
       return;
     }
 
-    // Attach user to request object
     req.user = {
       userId: (user._id as any).toString(),
       email: user.email,
