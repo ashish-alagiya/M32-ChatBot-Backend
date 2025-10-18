@@ -213,8 +213,12 @@ Title:`;
       }
 
       return title;
-    } catch (error) {
-      console.error("Error generating session title:", error);
+    } catch (error: any) {
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+        console.warn('Gemini API quota exceeded - using default title');
+      } else {
+        console.error("Error generating session title:", error?.message || error);
+      }
       return "New Chat";
     }
   }
@@ -273,8 +277,12 @@ Title:`;
       );
 
       console.log(`Session title updated: "${session.title}" → "${newTitle}"`);
-    } catch (error) {
-      console.error("Error updating session title:", error);
+    } catch (error: any) {
+      if (error?.status === 429 || error?.message?.includes('quota') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+        console.warn('Gemini API quota exceeded - skipping session title update');
+      } else {
+        console.error("Error updating session title:", error?.message || error);
+      }
     }
   }
 

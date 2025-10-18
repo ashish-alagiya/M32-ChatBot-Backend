@@ -27,6 +27,18 @@ export class FlightAgentService {
 
   async processFlightQuery(message: string, conversationHistory?: Array<{ role: string; message: string }>): Promise<FlightAgentResponse> {
     try {
+      if (this.hasMultipleFlightQueries(message)) {
+        return {
+          message: "I noticed you're asking about multiple flight searches at once! 😊\n\nTo give you the most accurate results, I'd like to help you with each search one at a time.\n\n**Which flight would you like me to search for first?**\n\nPlease provide:\n- Departure city/airport\n- Arrival city/airport\n- Travel dates\n\nOnce I find those flights for you, we can move on to the next search!",
+          requiresMoreInfo: true,
+          suggestedQuestions: [
+            "Search Mumbai to Dubai first",
+            "Find Delhi to London flights",
+            "Show Bangalore to Singapore options"
+          ]
+        };
+      }
+
       let fullContext = message;
       if (conversationHistory && conversationHistory.length > 0) {
         const recentHistory = conversationHistory.slice(-4);
@@ -320,6 +332,48 @@ Keep it friendly and actionable!`;
     }
 
     return merged;
+  }
+
+  private hasMultipleFlightQueries(message: string): boolean {
+    const lowerMessage = message.toLowerCase();
+    
+    // Common patterns that indicate multiple queries
+    const multiQueryIndicators = [
+      /\b(also|and also|additionally|plus|another)\b.*?\b(flight|ticket|trip)\b/i,
+      /\b(first|second|third|1st|2nd|3rd)\b.*?\b(flight|ticket|trip)\b/i,
+    ];
+    
+    // Count how many times key route indicators appear
+    const routePatterns = [
+      /\bfrom\s+\w+\s+to\s+\w+/gi,  // "from X to Y"
+      /\b\w+\s+to\s+\w+\b/gi,       // "X to Y"
+    ];
+    
+    let routeCount = 0;
+    routePatterns.forEach(pattern => {
+      const matches = lowerMessage.match(pattern);
+      if (matches) {
+        routeCount += matches.length;
+      }
+    });
+    
+    // Check for multiple query indicators
+    const hasMultiIndicator = multiQueryIndicators.some(pattern => pattern.test(lowerMessage));
+    
+    // If more than 2 routes mentioned, or multi-query indicators present with multiple routes
+    if (routeCount >= 3 || (routeCount >= 2 && hasMultiIndicator)) {
+      return true;
+    }
+    
+    // Also check if message contains multiple distinct city/airport pairs
+    const cityAirportPattern = /\b([A-Z]{3}|mumbai|delhi|bangalore|chennai|kolkata|hyderabad|pune|ahmedabad|jaipur|surat|london|dubai|singapore|bangkok|tokyo|new york|paris|sydney|hong kong|kuala lumpur|jakarta|manila|seoul|beijing|shanghai)\b/gi;
+    const cities = lowerMessage.match(cityAirportPattern);
+    
+    if (cities && cities.length >= 6) {
+      return true;
+    }
+    
+    return false;
   }
 
   clearContext(): void {

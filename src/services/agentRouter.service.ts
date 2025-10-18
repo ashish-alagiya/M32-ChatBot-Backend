@@ -57,7 +57,7 @@ export class AgentRouterService {
 
     console.log(`Agent Routing - Flight: ${flightScore.toFixed(2)}, Personal: ${personalScore.toFixed(2)}, InFlightConvo: ${isInFlightConversation}`);
 
-    if (flightScore >= flightThreshold && flightScore > personalScore) {
+    if (flightScore >= flightThreshold && flightScore >= personalScore) {
       this.conversationHistory.push({ role: 'user', message });
       
       const result = await this.flightAgent.processFlightQuery(message, this.conversationHistory);
@@ -164,25 +164,36 @@ export class AgentRouterService {
     const lowerMessage = message.toLowerCase();
     
     const flightKeywords = [
-      { keywords: ['flight', 'flights', 'fly', 'flying'], weight: 0.4 },
-      { keywords: ['airport', 'departure', 'arrival', 'layover', 'stopover'], weight: 0.35 },
-      { keywords: ['ticket', 'booking', 'book', 'reserve'], weight: 0.3 },
-      { keywords: ['airline', 'airways', 'air india', 'indigo', 'spicejet'], weight: 0.35 },
-      { keywords: ['round trip', 'one way', 'return flight', 'direct flight'], weight: 0.4 },
-      { keywords: ['travel', 'trip', 'journey'], weight: 0.2 },
-      { keywords: ['destination', 'going to', 'want to go'], weight: 0.25 },
+      { keywords: ['flight', 'flights', 'fly', 'flying', 'plane', 'airplane', 'aircraft'], weight: 0.4 },
+      { keywords: ['airport', 'departure', 'arrival', 'layover', 'stopover', 'transit', 'connection'], weight: 0.35 },
+      { keywords: ['ticket', 'booking', 'book', 'reserve', 'reservation', 'schedule'], weight: 0.3 },
+      { keywords: ['airline', 'airways', 'air india', 'indigo', 'spicejet', 'vistara', 'go air', 'air asia', 'emirates', 'lufthansa', 'british airways', 'qatar airways'], weight: 0.35 },
+      { keywords: ['round trip', 'one way', 'return flight', 'direct flight', 'non-stop', 'connecting flight', 'multi-city'], weight: 0.4 },
+      { keywords: ['travel', 'trip', 'journey', 'tour', 'vacation', 'holiday', 'visit'], weight: 0.2 },
+      { keywords: ['destination', 'going to', 'want to go', 'traveling to', 'heading to', 'visiting'], weight: 0.25 },
+      { keywords: ['check-in', 'boarding', 'baggage', 'luggage', 'carry-on', 'checked bag'], weight: 0.35 },
+      { keywords: ['economy', 'business class', 'first class', 'premium economy', 'cabin'], weight: 0.3 },
+      { keywords: ['takeoff', 'landing', 'gate', 'terminal', 'runway'], weight: 0.35 },
+      { keywords: ['itinerary', 'route', 'schedule', 'timetable', 'flight time'], weight: 0.3 },
+      { keywords: ['passenger', 'traveler', 'adult', 'child', 'infant', 'seat'], weight: 0.25 },
+      { keywords: ['delay', 'cancelled', 'postponed', 'rescheduled', 'on time'], weight: 0.3 },
+      { keywords: ['jet', 'boeing', 'airbus', '737', '747', 'a320', 'a380'], weight: 0.35 },
+      { keywords: ['domestic', 'international', 'overseas', 'abroad'], weight: 0.25 },
     ];
 
     const cityPatterns = [
-      /\b(mumbai|delhi|bangalore|goa|chennai|kolkata|hyderabad)\b/i,
-      /\b(from|to)\s+[A-Z][a-z]+/,
-      /\b[A-Z]{3}\b/, 
+      /\b(mumbai|delhi|bangalore|bengaluru|goa|chennai|kolkata|hyderabad|pune|ahmedabad|jaipur|lucknow|kochi|trivandrum|chandigarh|indore|nagpur|surat|vadodara|visakhapatnam|bhubaneswar|patna|ranchi|amritsar|srinagar|guwahati|varanasi)\b/i,
+      /\b(london|paris|new york|dubai|singapore|bangkok|tokyo|hong kong|sydney|los angeles|chicago|toronto|beijing|shanghai|frankfurt|amsterdam|rome|barcelona|istanbul|moscow|kuala lumpur|jakarta)\b/i,
+      /\b(from|to|via|through)\s+[A-Z][a-z]+/,
+      /\b[A-Z]{3}\b/,
     ];
 
     const datePatterns = [
-      /\b(tomorrow|today|next week|next month)\b/i,
+      /\b(tomorrow|today|tonight|next week|next month|this weekend|next weekend)\b/i,
       /\d{1,2}[-\/]\d{1,2}[-\/]?\d{0,4}/,
-      /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
+      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\b/i,
+      /\b(morning|afternoon|evening|night)\s+(flight|departure|arrival)\b/i,
+      /\b(early|late)\s+(morning|afternoon|evening)\b/i,
     ];
 
     let score = 0;
@@ -210,8 +221,12 @@ export class AgentRouterService {
       }
     }
 
-    if (/how (much|expensive|cheap)|price|cost|fare/i.test(message)) {
+    if (/how (much|expensive|cheap)|price|cost|fare|rates|charges|fee/i.test(message)) {
       score += 0.15;
+    }
+
+    if (/show|find|search|look|check|available|availability/i.test(message)) {
+      score += 0.1;
     }
 
     return Math.min(score, 1.0);

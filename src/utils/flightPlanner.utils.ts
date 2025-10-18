@@ -539,9 +539,11 @@ export class FlightPlanner {
     console.log("Extracting flight parameters from:", userInput);
     
     const returnDatePatterns = [
-      /return(?:ing)?\s*(?:date|on)?[:\s]+(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
-      /come\s*back\s*(?:on)?[:\s]*(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
-      /returning\s*(?:on)?[:\s]*(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
+      /return(?:ing)?\s*(?:date|on)?[:\s]+(?:is\s+)?(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
+      /return(?:ing)?\s*(?:date)?[:\s]+(?:on\s+)?(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
+      /come\s*back\s*(?:on)?[:\s]*(?:is\s+)?(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
+      /returning\s*(?:on)?[:\s]*(?:is\s+)?(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
+      /(?:back|return)\s+(?:on\s+)?(\d{1,2}[-\/]\d{1,2}(?:[-\/]\d{2,4})?)/i,
     ];
     
     let returnDateMatch: string | null = null;
@@ -639,7 +641,7 @@ export class FlightPlanner {
 
     console.log("Extracted parameters:", params);
 
-    if (params.departureId && params.arrivalId && params.outboundDate) {
+    if (Object.keys(params).length > 0) {
       return params;
     }
 
