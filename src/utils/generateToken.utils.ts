@@ -1,4 +1,4 @@
-import config from "../config";
+import config from "../config/index.js";
 import jwt from "jsonwebtoken";
 
 const generateToken = (userId: string, email: string): string => {
