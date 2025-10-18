@@ -4,6 +4,7 @@ import cors from "cors";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 import connectDB from "./config/database.js";
 
 const app = express();
@@ -23,6 +24,7 @@ app.use((req, res, next) => {
 
 app.use("/api", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({

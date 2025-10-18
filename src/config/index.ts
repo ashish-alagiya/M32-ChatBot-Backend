@@ -5,6 +5,8 @@ export const config = {
   logLevel: process.env.LOG_LEVEL || "info",
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  serpApiKey: process.env.SERP_API_KEY,
 };
 
 export default config;
