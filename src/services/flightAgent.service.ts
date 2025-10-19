@@ -27,8 +27,9 @@ export class FlightAgentService {
 
   async processFlightQuery(message: string, conversationHistory?: Array<{ role: string; message: string }>): Promise<FlightAgentResponse> {
     try {
-      const multipleFlightRegex = /(?:.*(?:from|to).*){2,}/i;
-      if (multipleFlightRegex.test(message)) {
+      // Check for actual multiple flight routes (city pairs), not just "to" appearing multiple times
+      const hasMultipleRoutes = this.hasMultipleFlightRoutes(message);
+      if (hasMultipleRoutes) {
         return {
           message: "I noticed you're asking about multiple flight searches at once! 😊\n\nTo give you the most accurate results, I'd like to help you with each search one at a time.\n\n**Which flight would you like me to search for first?**\n\nPlease provide:\n- Departure city/airport\n- Arrival city/airport\n- Travel dates\n\nOnce I find those flights for you, we can move on to the next search!",
           requiresMoreInfo: true,
@@ -352,6 +353,79 @@ Keep it friendly and actionable!`;
 
   private hasCompleteParams(params: Partial<FlightSearchParams>): boolean {
     return !!(params.departureId && params.arrivalId && params.outboundDate);
+  }
+
+  private hasMultipleFlightRoutes(message: string): boolean {
+    const lowerMessage = message.toLowerCase();
+    
+    // Common patterns that indicate multiple queries
+    const multiQueryIndicators = [
+      /\b(also|and also|additionally|plus|another)\b.*?\b(flight|ticket|trip)\b/i,
+      /\b(first|second|third|1st|2nd|3rd)\b.*?\b(flight|ticket|trip)\b/i,
+    ];
+    
+    // First, look for explicit "from X to Y" patterns
+    const fromToPattern = /\bfrom\s+(\w+)\s+to\s+(\w+)/gi;
+    const fromToMatches = lowerMessage.match(fromToPattern);
+    
+    // Then look for standalone "X to Y" patterns, but exclude those already covered by "from X to Y"
+    const standalonePattern = /\b(\w+)\s+to\s+(\w+)\b/gi;
+    const standaloneMatches = lowerMessage.match(standalonePattern);
+    
+    let routeCount = 0;
+    const foundRoutes = new Set();
+    
+    // Count "from X to Y" patterns
+    if (fromToMatches) {
+      fromToMatches.forEach(match => {
+        const words = match.split(/\s+/);
+        // Skip if it contains common non-city words
+        if (!words.some(word => 
+          ['need', 'want', 'going', 'trying', 'planning', 'looking', 'help', 'get', 'find'].includes(word.toLowerCase())
+        )) {
+          foundRoutes.add(match);
+          routeCount++;
+        }
+      });
+    }
+    
+    // Count standalone "X to Y" patterns, but avoid double-counting
+    if (standaloneMatches) {
+      standaloneMatches.forEach(match => {
+        const words = match.split(/\s+/);
+        // Skip if it contains common non-city words or if already counted
+        if (!words.some(word => 
+          ['need', 'want', 'going', 'trying', 'planning', 'looking', 'help', 'get', 'find'].includes(word.toLowerCase())
+        ) && !foundRoutes.has(match)) {
+          // Also check if this route is already covered by a "from X to Y" pattern
+          const isCovered = [...foundRoutes].some((existingRoute) => 
+            (existingRoute as string).includes(match) || match.includes((existingRoute as string).replace('from ', ''))
+          );
+          if (!isCovered) {
+            foundRoutes.add(match);
+            routeCount++;
+          }
+        }
+      });
+    }
+    
+    // Check for multiple query indicators
+    const hasMultiIndicator = multiQueryIndicators.some(pattern => pattern.test(lowerMessage));
+    
+    // If more than 2 actual routes mentioned, or multi-query indicators present with multiple routes
+    if (routeCount >= 3 || (routeCount >= 2 && hasMultiIndicator)) {
+      return true;
+    }
+    
+    // Also check if message contains multiple distinct city/airport pairs
+    const cityAirportPattern = /\b([A-Z]{3}|mumbai|delhi|bangalore|chennai|kolkata|hyderabad|pune|ahmedabad|jaipur|surat|london|dubai|singapore|bangkok|tokyo|new york|paris|sydney|hong kong|kuala lumpur|jakarta|manila|seoul|beijing|shanghai)\b/gi;
+    const cities = lowerMessage.match(cityAirportPattern);
+    
+    if (cities && cities.length >= 6) {
+      return true;
+    }
+    
+    return false;
   }
 
   clearContext(): void {
