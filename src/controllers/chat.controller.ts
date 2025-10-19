@@ -119,7 +119,8 @@ export class ChatController {
         const aiMessage = await Message.create({
           chat_session_id: chatSession._id,
           is_user_message: false,
-          message: result.response
+          message: result.response,
+          flightData: result.flightData,
         });
         console.log('AI response stored:', aiMessage._id);
 
@@ -195,7 +196,7 @@ User message: "${prompt}"
 Title:`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: titlePrompt,
         config: {
           thinkingConfig: {
@@ -254,7 +255,7 @@ ${conversationContext}
 Title:`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: titlePrompt,
         config: {
           thinkingConfig: {

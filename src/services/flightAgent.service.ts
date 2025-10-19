@@ -153,7 +153,7 @@ Provide a friendly, conversational response that:
 Be natural and friendly!`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: aiPrompt,
         config: {
           thinkingConfig: {
@@ -196,7 +196,7 @@ Provide a friendly, conversational response that:
 Be encouraging and natural!`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: aiPrompt,
         config: {
           thinkingConfig: {
@@ -241,7 +241,7 @@ Provide a friendly response that:
 Keep it conversational!`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: aiPrompt,
         config: {
           thinkingConfig: {
@@ -292,7 +292,7 @@ Provide a helpful, concise summary with:
 Keep it friendly and actionable!`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: aiPrompt,
         config: {
           thinkingConfig: {

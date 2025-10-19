@@ -6,6 +6,7 @@ export interface IMessage extends Document {
   message: string;
   createdAt: Date;
   updatedAt: Date;
+  flightData: any;
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -26,6 +27,9 @@ const messageSchema = new Schema<IMessage>(
       required: [true, "Message is required"],
       trim: true,
     },
+     flightData: {
+      type: Object
+     }
   },
   {
     timestamps: true,

@@ -47,7 +47,7 @@ export class PersonalAgentService {
         : message;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: promptWithContext,
         config: {
           thinkingConfig: {
@@ -130,7 +130,7 @@ Respond in JSON format:
 If no personal info is found, leave personalInfo fields as null.`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: contextPrompt,
         config: {
           thinkingConfig: {
@@ -173,7 +173,7 @@ Each should be a complete question, max 10 words.
 Respond with just the 3 questions, one per line.`;
 
       const response = await this.client.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.5-flash-lite",
         contents: followUpPrompt,
         config: {
           thinkingConfig: {
