@@ -668,48 +668,21 @@ export class FlightPlanner {
       'december': 12, 'dec': 12
     };
     
-    // Enhanced pattern to catch "22 oct 2025" format
-    const monthNamePatterns = [
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\d{4})\b/gi, // "oct 22 2025"
-      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{4})\b/gi, // "22 oct 2025"
-      /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi, // "oct 22" (no year)
-    ];
+    const monthNamePattern = /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
     
-    for (const pattern of monthNamePatterns) {
-      let match;
-      while ((match = pattern.exec(userInput)) !== null) {
-        let monthName: string, day: number, year: number;
+    let match;
+    while ((match = monthNamePattern.exec(userInput)) !== null) {
+      const monthName = match[1].toLowerCase();
+      const day = parseInt(match[2]);
+      const month = monthMap[monthName];
+      
+      if (month && day >= 1 && day <= 31) {
+        const testDate = new Date(currentYear, month - 1, day);
+        const year = testDate < today ? currentYear + 1 : currentYear;
         
-        if (pattern === monthNamePatterns[0]) {
-          // "oct 22 2025" format
-          monthName = match[1].toLowerCase();
-          day = parseInt(match[2]);
-          year = parseInt(match[3]);
-        } else if (pattern === monthNamePatterns[1]) {
-          // "22 oct 2025" format
-          day = parseInt(match[1]);
-          monthName = match[2].toLowerCase();
-          year = parseInt(match[3]);
-        } else {
-          // "oct 22" format (no year)
-          monthName = match[1].toLowerCase();
-          day = parseInt(match[2]);
-          year = currentYear;
-        }
-        
-        const month = monthMap[monthName];
-        
-        if (month && day >= 1 && day <= 31) {
-          // If year is not specified or is 2 digits, assume current year or next year
-          if (!year || year < 100) {
-            const testDate = new Date(currentYear, month - 1, day);
-            year = testDate < today ? currentYear + 1 : currentYear;
-          }
-          
-          const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-          dates.push(formattedDate);
-          console.log(`Extracted month name date: ${match[0]} -> ${formattedDate}`);
-        }
+        const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        dates.push(formattedDate);
+        console.log(`Extracted month name date: ${match[0]} -> ${formattedDate}`);
       }
     }
     
@@ -819,63 +792,46 @@ export class FlightPlanner {
 
     const lowerInput = userInput.toLowerCase();
     
-    // Enhanced patterns to catch more variations
-    const patterns = [
-      /from\s+([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i,
-      /travel\s+from\s+([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i,
-      /going\s+from\s+([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i,
-      /want\s+to\s+go\s+from\s+([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i,
-      /([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i,
-    ];
+    const fromToPattern = /from\s+([a-z\s]+?)\s+to\s+([a-z\s]+?)(?:\s+on|\s+in|\s+at|$)/i;
+    const match = lowerInput.match(fromToPattern);
     
-    for (const pattern of patterns) {
-      const match = lowerInput.match(pattern);
-      if (match) {
-        const fromCity = match[1].trim();
-        const toCity = match[2].trim();
-        
-        let departureCode: string | undefined;
-        let arrivalCode: string | undefined;
-        
-        // More flexible matching
-        for (const [city, code] of Object.entries(cityAirportMap)) {
-          if (fromCity.includes(city) || city.includes(fromCity)) {
-            departureCode = code;
-          }
-          if (toCity.includes(city) || city.includes(toCity)) {
-            arrivalCode = code;
-          }
+    if (match) {
+      const fromCity = match[1].trim();
+      const toCity = match[2].trim();
+      
+      let departureCode: string | undefined;
+      let arrivalCode: string | undefined;
+      
+      for (const [city, code] of Object.entries(cityAirportMap)) {
+        if (fromCity.includes(city) || city.includes(fromCity)) {
+          departureCode = code;
         }
-        
-        if (departureCode && arrivalCode) {
-          console.log(`Found cities: ${fromCity} -> ${departureCode}, ${toCity} -> ${arrivalCode}`);
-          return {
-            departure: departureCode,
-            arrival: arrivalCode
-          };
+        if (toCity.includes(city) || city.includes(toCity)) {
+          arrivalCode = code;
         }
+      }
+      
+      if (departureCode && arrivalCode) {
+        return {
+          departure: departureCode,
+          arrival: arrivalCode
+        };
       }
     }
     
-    // Fallback: find cities in any order
     const cities = Object.keys(cityAirportMap);
-    const foundCities: { city: string; code: string; position: number }[] = [];
+    const foundCities: string[] = [];
 
     cities.forEach(city => {
-      const index = lowerInput.indexOf(city);
-      if (index !== -1) {
-        foundCities.push({ city, code: cityAirportMap[city], position: index });
+      if (lowerInput.includes(city)) {
+        foundCities.push(cityAirportMap[city]);
       }
     });
 
-    // Sort by position in the text
-    foundCities.sort((a, b) => a.position - b.position);
-
     if (foundCities.length >= 2) {
-      console.log(`Found cities in order: ${foundCities[0].city} -> ${foundCities[0].code}, ${foundCities[1].city} -> ${foundCities[1].code}`);
       return {
-        departure: foundCities[0].code,
-        arrival: foundCities[1].code
+        departure: foundCities[0],
+        arrival: foundCities[1]
       };
     }
 
