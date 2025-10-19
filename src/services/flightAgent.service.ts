@@ -27,7 +27,8 @@ export class FlightAgentService {
 
   async processFlightQuery(message: string, conversationHistory?: Array<{ role: string; message: string }>): Promise<FlightAgentResponse> {
     try {
-      if (this.hasMultipleFlightQueries(message)) {
+      const multipleFlightRegex = /(?:.*(?:from|to).*){2,}/i;
+      if (multipleFlightRegex.test(message)) {
         return {
           message: "I noticed you're asking about multiple flight searches at once! 😊\n\nTo give you the most accurate results, I'd like to help you with each search one at a time.\n\n**Which flight would you like me to search for first?**\n\nPlease provide:\n- Departure city/airport\n- Arrival city/airport\n- Travel dates\n\nOnce I find those flights for you, we can move on to the next search!",
           requiresMoreInfo: true,
@@ -46,9 +47,18 @@ export class FlightAgentService {
         fullContext = `Previous conversation:\n${historyText}\n\nCurrent message: ${message}`;
       }
 
+      // Extract parameters from current message
       const currentParams = this.flightPlanner.extractFlightParams(message);
       
-      const extractedParams = this.mergeFlightParams(currentParams, this.conversationContext);
+      // Also try to extract from conversation history if current message doesn't have enough info
+      let historyParams: Partial<FlightSearchParams> | null = null;
+      if (conversationHistory && conversationHistory.length > 0 && (!currentParams || !this.hasCompleteParams(currentParams))) {
+        const historyText = conversationHistory.map(h => h.message).join(' ');
+        historyParams = this.flightPlanner.extractFlightParams(historyText);
+      }
+      
+      // Merge current params, history params, and existing context
+      const extractedParams = this.mergeFlightParams(currentParams || historyParams, this.conversationContext);
       
       if (currentParams) {
         this.conversationContext = { ...this.conversationContext, ...currentParams };
@@ -144,11 +154,14 @@ export class FlightAgentService {
 
 This seems like they want to search for flights, but I need more information. 
 
+IMPORTANT: Always assume they want FLIGHTS when they mention travel. Do NOT suggest other transport options like trains or buses.
+
 Provide a friendly, conversational response that:
 1. Acknowledges what they said
 2. Asks for the missing information (departure city, arrival city, dates)
 3. Gives a helpful example
 4. Keeps it brief and encouraging
+5. Focuses ONLY on flights
 
 Be natural and friendly!`;
 
@@ -183,15 +196,18 @@ Be natural and friendly!`;
 
       const aiPrompt = `User said: "${userPrompt}"
 
-I understood these details:
+I understood these flight details:
 ${extractedDetails.join('\n')}
 
 But I still need: ${missingInfo.join(', ')}
 
+IMPORTANT: Focus ONLY on flights. Do NOT suggest other transport options.
+
 Provide a friendly, conversational response that:
-1. Confirms what I understood
+1. Confirms what I understood about their flight request
 2. Asks for the missing information naturally
 3. Keeps it brief and helpful
+4. Maintains focus on flights only
 
 Be encouraging and natural!`;
 
@@ -205,10 +221,10 @@ Be encouraging and natural!`;
         },
       });
 
-      return response.text || `Great! I got some details, but I still need ${missingInfo.join(' and ')}. Could you provide that?`;
+      return response.text || `Great! I got some flight details, but I still need ${missingInfo.join(' and ')}. Could you provide that?`;
     } catch (error) {
       console.error("Contextual clarification error:", error);
-      return `I need a bit more information: ${missingInfo.join(' and ')}. Could you provide that?`;
+      return `I need a bit more information for your flight search: ${missingInfo.join(' and ')}. Could you provide that?`;
     }
   }
 
@@ -334,46 +350,8 @@ Keep it friendly and actionable!`;
     return merged;
   }
 
-  private hasMultipleFlightQueries(message: string): boolean {
-    const lowerMessage = message.toLowerCase();
-    
-    // Common patterns that indicate multiple queries
-    const multiQueryIndicators = [
-      /\b(also|and also|additionally|plus|another)\b.*?\b(flight|ticket|trip)\b/i,
-      /\b(first|second|third|1st|2nd|3rd)\b.*?\b(flight|ticket|trip)\b/i,
-    ];
-    
-    // Count how many times key route indicators appear
-    const routePatterns = [
-      /\bfrom\s+\w+\s+to\s+\w+/gi,  // "from X to Y"
-      /\b\w+\s+to\s+\w+\b/gi,       // "X to Y"
-    ];
-    
-    let routeCount = 0;
-    routePatterns.forEach(pattern => {
-      const matches = lowerMessage.match(pattern);
-      if (matches) {
-        routeCount += matches.length;
-      }
-    });
-    
-    // Check for multiple query indicators
-    const hasMultiIndicator = multiQueryIndicators.some(pattern => pattern.test(lowerMessage));
-    
-    // If more than 2 routes mentioned, or multi-query indicators present with multiple routes
-    if (routeCount >= 3 || (routeCount >= 2 && hasMultiIndicator)) {
-      return true;
-    }
-    
-    // Also check if message contains multiple distinct city/airport pairs
-    const cityAirportPattern = /\b([A-Z]{3}|mumbai|delhi|bangalore|chennai|kolkata|hyderabad|pune|ahmedabad|jaipur|surat|london|dubai|singapore|bangkok|tokyo|new york|paris|sydney|hong kong|kuala lumpur|jakarta|manila|seoul|beijing|shanghai)\b/gi;
-    const cities = lowerMessage.match(cityAirportPattern);
-    
-    if (cities && cities.length >= 6) {
-      return true;
-    }
-    
-    return false;
+  private hasCompleteParams(params: Partial<FlightSearchParams>): boolean {
+    return !!(params.departureId && params.arrivalId && params.outboundDate);
   }
 
   clearContext(): void {
